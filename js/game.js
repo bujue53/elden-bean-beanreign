@@ -1,7 +1,7 @@
 import * as THREE from "../lib/three.module.js";
 import { audio } from "./audio.js";
-import { CLASSES, buildBoss, buildBeanBolt } from "./characters.js";
-import { loadNightfarers, createNightfarer, disposeNightfarer, updateNightfarerFlash } from "./nightfarers.js";
+import { CLASSES, buildBeanBolt } from "./characters.js";
+import { loadNightfarers, createNightfarer, createHeolstor, disposeNightfarer, updateNightfarerFlash } from "./nightfarers.js";
 import {
   groundTexture, moonTexture, pillarTexture, softDotTexture,
   slashTexture, ringTexture, beamTexture,
@@ -70,7 +70,7 @@ for (const [x, y, z, color] of [
   reflectionScene.add(panel);
 }
 const reflectionGenerator = new THREE.PMREMGenerator(renderer);
-scene.environment = reflectionGenerator.fromScene(reflectionScene, 0.08).texture;
+scene.environment = reflectionGenerator.fromScene(reflectionScene, 0.025).texture;
 scene.environmentIntensity = 0.65;
 reflectionGenerator.dispose();
 reflectionScene.traverse(node => { node.geometry?.dispose(); node.material?.dispose(); });
@@ -98,7 +98,7 @@ scene.add(fillLight);
 const ambient = new THREE.AmbientLight(0x46527f, 0.7);
 scene.add(ambient);
 
-const bossGlow = new THREE.PointLight(0xff5522, 0, 16);
+const bossGlow = new THREE.PointLight(0x7766cc, 0, 16);
 bossGlow.position.set(0, 3, -4);
 scene.add(bossGlow);
 
@@ -247,6 +247,7 @@ function buildPlayer() {
 }
 
 function respawnPlayer() {
+  cancelExecution();
   // 清掉场上的危险（扩散波、陨石落点）
   for (const m of fx.meteors) {
     scene.remove(m.mark);
@@ -292,7 +293,7 @@ function respawnPlayer() {
 }
 
 // ---------- BOSS ----------
-let boss = buildBoss();
+let boss = createHeolstor();
 boss.position.set(0, 0, -5);
 scene.add(boss);
 
@@ -314,6 +315,156 @@ const bossState = {
   facing: new THREE.Vector3(0, 0, 1),
   dead: false,
 };
+
+const execution = {
+  active: false, time: 0, duration: 3.2, phase: "none", hits: [], penetration: 0,
+  bossPos: new THREE.Vector3(), outward: new THREE.Vector3(), bossYaw: 0,
+  blade: null, weaponVisible: true, shieldVisible: true,
+};
+
+function canExecute() {
+  if (execution.active || bossState.dead || bossState.state !== "stagger"
+    || !playerState.grounded || playerState.dodging || playerState.healing) return false;
+  const offset = playerState.pos.clone().sub(bossState.pos).setY(0);
+  const distance = offset.length();
+  if (distance > 3.0 || distance < 0.15) return false;
+  offset.normalize();
+  const facing = new THREE.Vector3(Math.sin(playerState.yaw), 0, Math.cos(playerState.yaw));
+  return offset.dot(bossState.facing) > 0.35 && facing.dot(offset) < -0.45;
+}
+
+function makeExecutionBlade() {
+  const root = new THREE.Group();
+  const steel = new THREE.MeshStandardMaterial({ color: 0xbecad7, metalness: 0.85, roughness: 0.25 });
+  const blade = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.83, 0.018), steel);
+  blade.position.y = 0.415;
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.026, 0.12, 4), steel);
+  tip.position.y = 0.89;
+  const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.028, 0.18, 10), new THREE.MeshStandardMaterial({ color: 0x302219 }));
+  grip.position.y = -0.09;
+  const guard = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.025, 0.05), steel);
+  root.add(blade, tip, grip, guard);
+  root.traverse(node => { if (node.isMesh) node.castShadow = true; });
+  return root;
+}
+
+function startExecution() {
+  clearInput();
+  clearFx();
+  execution.active = true;
+  execution.time = 0;
+  execution.hits = [];
+  execution.outward.copy(bossState.facing).setY(0).normalize();
+  execution.bossPos.copy(bossState.pos).setY(0);
+  execution.bossYaw = Math.atan2(execution.outward.x, execution.outward.z);
+  execution.weaponVisible = player.userData.parts.weaponHolder.visible;
+  execution.shieldVisible = player.userData.parts.shieldHolder?.visible ?? true;
+  player.userData.parts.weaponHolder.visible = false;
+  if (player.userData.parts.shieldHolder) player.userData.parts.shieldHolder.visible = false;
+  playerState.attacking = true;
+  playerState.attackType = "execution";
+  playerState.attackPhase = "active";
+  playerState.healing = false;
+  playerState.sprinting = false;
+  playerState.moving = false;
+  playerState.vel.set(0, 0, 0);
+  resetBossPose();
+  bossState.state = "execution";
+  bossState.timer = execution.duration;
+  bossState.anim = 0;
+  boss.userData.parts.body.rotation.x = 0.85;
+  boss.userData.parts.head.rotation.x = 0.2;
+  boss.userData.parts.swordHolder.rotation.set(0.4, 0, 1.0);
+  execution.blade ??= makeExecutionBlade();
+  scene.add(execution.blade);
+  showCenterMsg("处决", 1.3);
+  updateExecution(0);
+}
+
+function restoreExecutionPose() {
+  if (execution.blade) scene.remove(execution.blade);
+  if (player) {
+    const p = player.userData.parts;
+    p.weaponHolder.visible = execution.weaponVisible;
+    if (p.shieldHolder) p.shieldHolder.visible = execution.shieldVisible;
+    p.armR.scale.set(1, 1, 1);
+    resetWeaponPose();
+    playerState.attacking = false;
+    playerState.attackPhase = "none";
+  }
+  boss.userData.parts.body.rotation.x = 0;
+  boss.userData.parts.head.rotation.x = 0;
+}
+
+function cancelExecution() {
+  if (!execution.active) return;
+  execution.active = false;
+  execution.phase = "none";
+  restoreExecutionPose();
+}
+
+function updateExecution(dt) {
+  execution.time += dt;
+  const t = execution.time;
+  const smooth = (a, b) => THREE.MathUtils.smoothstep(t, a, b);
+  const withdraw = smooth(1.65, 2.78);
+  const plunge = smooth(0.42, 0.68);
+  const depth = t < 0.42 ? THREE.MathUtils.lerp(-0.50, -0.30, smooth(0, 0.42))
+    : t < 1.65 ? THREE.MathUtils.lerp(-0.30, 0.28, plunge)
+    : THREE.MathUtils.lerp(0.28, -0.52, withdraw);
+  execution.phase = t < 0.68 ? "insert" : t < 1.65 ? "hold" : t < 2.78 ? "withdraw" : "recover";
+
+  // The boss's position, facing, pose and attack clock are frozen for the whole interaction.
+  bossState.pos.copy(execution.bossPos);
+  boss.position.copy(execution.bossPos);
+  boss.rotation.set(0, execution.bossYaw, 0);
+  boss.updateMatrixWorld(true);
+  playerState.pos.copy(execution.bossPos).addScaledVector(execution.outward, 1.25 - plunge * 0.12 + withdraw * 0.12);
+  playerState.yaw = Math.atan2(-execution.outward.x, -execution.outward.z);
+  player.position.copy(playerState.pos);
+  player.rotation.set(0, playerState.yaw, 0);
+  const p = player.userData.parts;
+  p.body.rotation.x = 0.12 + plunge * 0.06 - withdraw * 0.06;
+  p.armL.rotation.set(-0.35, 0, 0.12);
+  p.legL.rotation.x = -0.08;
+  p.legR.rotation.x = 0.12;
+  player.updateMatrixWorld(true);
+  const target = boss.userData.parts.criticalAnchor.getWorldPosition(new THREE.Vector3());
+  const right = new THREE.Vector3(-execution.outward.z, 0, execution.outward.x);
+  const referenceGrip = playerState.pos.clone().add(new THREE.Vector3(0, 1.35, 0)).addScaledVector(right, 0.20);
+  const direction = target.clone().sub(referenceGrip).normalize();
+  const grip = target.clone().addScaledVector(direction, -(0.95 - depth));
+  execution.blade.position.copy(grip);
+  execution.blade.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+  execution.penetration = execution.blade.localToWorld(new THREE.Vector3(0, 0.95, 0)).sub(target).dot(direction);
+  // Aim the rigid shoulder hierarchy at the knife grip, keeping the hand with the weapon.
+  const localGrip = p.armR.parent.worldToLocal(grip.clone()).sub(p.armR.position);
+  const restGrip = p.weaponHolder.position.clone();
+  p.armR.scale.setScalar(THREE.MathUtils.clamp(localGrip.length() / restGrip.length(), 0.65, 1.35));
+  p.armR.quaternion.setFromUnitVectors(restGrip.normalize(), localGrip.normalize());
+
+  if (execution.hits.length === 0 && t >= 0.68) {
+    damageBoss(Math.round(140 * playerClass.stat.atk), { executionStrike: true });
+    spawnImpact(target.x, target.y, target.z, 0xd6b98d, 14);
+  }
+  if (execution.hits.length === 1 && t >= 2.4) {
+    damageBoss(Math.round(240 * playerClass.stat.atk), { executionStrike: true });
+    spawnImpact(target.x, target.y, target.z, 0xd6b98d, 18);
+  }
+  updateHUD();
+  if (t >= execution.duration) {
+    execution.active = false;
+    execution.phase = "none";
+    restoreExecutionPose();
+    clearInput();
+    playerState.invuln = 0.3;
+    bossState.poise = bossState.maxPoise;
+    bossState.state = "recover";
+    bossState.timer = 0.9;
+    if (bossState.hp <= 0) bossDie();
+    else checkBossPhase2();
+  }
+}
 
 // ---------- 实体：特效 / 弹幕 / 波 / 陨石 ----------
 const fx = {
@@ -413,11 +564,30 @@ function spawnImpact(x, y, z, color = 0xffa050, count = 10) {
   fx.impacts.push({ pts, vel, life: 0.55 });
 }
 
-function spawnBeanBolt(from, dir) {
+function spawnBeanBolt(from, dir, damage, charge = 0) {
   const mesh = buildBeanBolt();
   mesh.position.copy(from);
+  mesh.scale.setScalar(0.8 + charge * 0.9);
   scene.add(mesh);
-  fx.bolts.push({ mesh, dir: dir.clone().normalize(), speed: 18, life: 3, friendly: true });
+  fx.bolts.push({ mesh, dir: dir.clone().normalize(), speed: 18, life: 3, friendly: true, damage, charge });
+}
+
+function fireSpell(damage, charge = 0) {
+  const from = playerPosWorld().add(new THREE.Vector3(0, 1.3, 0));
+  let dir = new THREE.Vector3(Math.sin(playerState.yaw), 0, Math.cos(playerState.yaw));
+  if (playerState.locked && !bossState.dead) {
+    dir = bossState.pos.clone().add(new THREE.Vector3(0, 2.0, 0)).sub(from).normalize();
+  }
+  spawnBeanBolt(from.addScaledVector(dir, 0.55), dir, damage, charge);
+  audio.sfx("meteor");
+}
+
+function removeSpell(bolt) {
+  scene.remove(bolt.mesh);
+  bolt.mesh.traverse(node => {
+    node.geometry?.dispose();
+    node.material?.dispose();
+  });
 }
 
 function spawnBeam(x, z, w = 2.2) {
@@ -515,12 +685,13 @@ window.addEventListener("keydown", (e) => {
     audio.sfx("ui");
     respawnPlayer();
     setState("play");
+    return;
   }
   if (e.code === "KeyE") toggleLockOn();
   if (e.code === "ShiftLeft" || e.code === "ShiftRight") {
     playerState.shiftPressed = true;
   }
-  if (e.code === "KeyH") {
+  if (e.code === "KeyR" && gameState === "play" && !execution.active) {
     playerState.healPressed = true;
   }
 });
@@ -634,7 +805,7 @@ function enableFreeLook() {
 }
 
 function toggleLockOn() {
-  if (gameState !== "play") return;
+  if (gameState !== "play" || execution.active) return;
   playerState.locked = !playerState.locked;
   audio.sfx("lock");
   els.lockon.classList.toggle("hidden", !playerState.locked);
@@ -735,6 +906,7 @@ function openSelect() {
 }
 
 function toTitle() {
+  cancelExecution();
   lockAttemptId += 1;
   if (document.pointerLockElement) document.exitPointerLock();
   freeLook = false;
@@ -765,6 +937,7 @@ function toTitle() {
 }
 
 function startFight(cls) {
+  cancelExecution();
   playerClass = cls;
   buildPlayer();
   playerState.hp = playerState.maxHp;
@@ -793,10 +966,11 @@ function startFight(cls) {
   respawnPlayer();
   setState("play");
   updateCamera(1);
-  showCenterMsg("击败夜王 Heolstor", 2.5);
+  showCenterMsg("击败黑夜王 布德奇冥", 2.5);
 }
 
 function resetFight() {
+  cancelExecution();
   bossState.hp = bossState.maxHp;
   bossState.poise = bossState.maxPoise;
   bossState.dead = false;
@@ -820,6 +994,7 @@ function resetFight() {
 function clearFx() {
   for (const key of Object.keys(fx)) {
     for (const item of fx[key]) {
+      if (key === "bolts") { removeSpell(item); continue; }
       scene.remove(item.mesh ?? item.pts ?? item.mark ?? item);
       if (item.mesh) scene.remove(item.mesh);
       if (item.pts) scene.remove(item.pts);
@@ -920,9 +1095,11 @@ function updatePlayer(dt) {
     if (!playerState.attacking && !playerState.heavyCharging) {
       if (mouseDownL && !playerState.lmbHeld) {
         playerState.lmbHeld = true;
-        const cost = !playerState.grounded ? 16 : playerState.sprinting ? 15 : 12;
+        if (canExecute()) { startExecution(); return; }
+        const cost = stat.magic ? 12 : !playerState.grounded ? 16 : playerState.sprinting ? 15 : 12;
         if (playerState.stamina >= cost) {
-          if (!playerState.grounded) startJumpAttack();
+          if (stat.magic) startLightAttack();
+          else if (!playerState.grounded) startJumpAttack();
           else if (playerState.sprinting) startRunningAttack();
           else startLightAttack();
         }
@@ -1007,7 +1184,7 @@ function startLightAttack() {
   playerState.attacking = true;
   playerState.attackPhase = "windup";
   playerState.comboTimer = 1.0;
-  playerState.attackType = "light";
+  playerState.attackType = stat.magic ? "magicLight" : "light";
   const mult = [1, 1.08, 1.18][playerState.combo] || 1.1;
   playerState.attackDamage = Math.round(42 * stat.atk * mult);
   playerState.combo = (playerState.combo + 1) % stat.combo;
@@ -1017,7 +1194,7 @@ function startLightAttack() {
   playerState.attackHit = false;
   playerState.stamina -= 12;
   audio.sfx("whoosh");
-  spawnSlash(playerPosWorld(), playerState.yaw, 1, "220, 230, 255");
+  if (!stat.magic) spawnSlash(playerPosWorld(), playerState.yaw, 1, "220, 230, 255");
 }
 
 function startRunningAttack() {
@@ -1056,17 +1233,16 @@ function releaseHeavy() {
   if (!playerState.heavyCharging) return;
   playerState.heavyCharging = false;
   const stat = playerClass.stat;
+  if (playerState.stamina < (stat.magic ? 22 : 20)) return;
   if (stat.magic) {
-    // 隐士：发射豆能弹幕
+    // 隐士：蓄力提高法术伤害和弹体大小，所有判定都发生在远程弹命中时。
     playerState.attacking = true;
     playerState.attackPhase = "active";
     playerState.attackType = "magic";
     playerState.attackTotal = 0.5;
     playerState.attackTimer = 0.5;
     playerState.stamina -= 22;
-    const dir = new THREE.Vector3(Math.sin(playerState.yaw), 0, Math.cos(playerState.yaw));
-    spawnBeanBolt(playerPosWorld().add(new THREE.Vector3(0, 1.3, 0)).add(dir.clone().multiplyScalar(1)), dir);
-    audio.sfx("meteor");
+    fireSpell(Math.round(70 * stat.atk * (1 + playerState.heavyCharge * 1.1)), playerState.heavyCharge);
     return;
   }
   playerState.attacking = true;
@@ -1084,6 +1260,7 @@ function releaseHeavy() {
 }
 
 function onAttackActive(type) {
+  if (type === "magicLight") { fireSpell(playerState.attackDamage); return; }
   if (type === "magic") return;
   const stat = playerClass.stat;
   const range = 2.1 * stat.range;
@@ -1124,7 +1301,7 @@ function animateAttack(type, t) {
   } else if (type === "jump") {
     wh.rotation.x = t < 0.5 ? -2.4 : -1.2;
     wh.rotation.z = 0.5;
-  } else if (type === "magic") {
+  } else if (type === "magic" || type === "magicLight") {
     wh.rotation.x = -1.6 + t * 0.4;
     wh.rotation.z = 0.3;
   }
@@ -1196,9 +1373,18 @@ function animatePlayerVisual(dt) {
 }
 
 // ---------- 伤害 BOSS ----------
-function damageBoss(amount, { crit = false, knock = 1 } = {}) {
+function damageBoss(amount, { crit = false, knock = 1, executionStrike = false } = {}) {
   if (bossState.dead || bossState.state === "death") return;
+  if (execution.active && !executionStrike) return;
   bossState.hp -= amount;
+  if (executionStrike) {
+    bossState.hp = Math.max(0, bossState.hp);
+    spawnDmgNum(amount, bossState.pos.clone().add(new THREE.Vector3(0, 2.2, 0)), { crit: true, size: 28 });
+    audio.sfx("heavyHit");
+    cameraShake(0.18);
+    execution.hits.push({ time: execution.time, damage: amount, hp: bossState.hp });
+    return;
+  }
   bossState.poise -= amount * 0.35 + (crit ? 40 : 0);
   bossState.hitFlash = 0.12;
   bossGlow.intensity = 1.6;
@@ -1211,7 +1397,7 @@ function damageBoss(amount, { crit = false, knock = 1 } = {}) {
     bossState.timer = 2.6;
     bossState.anim = 0;
     audio.sfx("bossDown");
-    showCenterMsg("处决时机！", 1.4);
+    showCenterMsg("处决时机！靠近正面按左键", 2.1);
   } else if (bossState.state === "skyrend" && bossState.poise <= 0) {
     // 开天蓄力中被破韧：取消技能
     bossState.poise = bossState.maxPoise;
@@ -1234,15 +1420,19 @@ function damageBoss(amount, { crit = false, knock = 1 } = {}) {
     bossState.engaged = true;
     els.boss.classList.remove("hidden");
   }
-  if (!bossState.phase2 && bossState.hp < bossState.maxHp * 0.38) {
+  checkBossPhase2();
+  const kb = new THREE.Vector3(bossState.pos.x - playerState.pos.x, 0, bossState.pos.z - playerState.pos.z).normalize();
+  bossState.pos.add(kb.multiplyScalar(0.25 * knock));
+  bossState.vel.add(kb.multiplyScalar(0.2 * knock));
+}
+
+function checkBossPhase2() {
+  if (!bossState.phase2 && bossState.hp > 0 && bossState.hp < bossState.maxHp * 0.38) {
     bossState.phase2 = true;
     bossState.attackCd = 0.6;
     showCenterMsg("黑夜将至……", 2.2);
     audio.sfx("roar");
   }
-  const kb = new THREE.Vector3(bossState.pos.x - playerState.pos.x, 0, bossState.pos.z - playerState.pos.z).normalize();
-  bossState.pos.add(kb.multiplyScalar(0.25 * knock));
-  bossState.vel.add(kb.multiplyScalar(0.2 * knock));
 }
 
 function bossDie() {
@@ -1262,6 +1452,7 @@ function bossDie() {
 
 // ---------- BOSS AI ----------
 function updateBoss(dt) {
+  if (execution.active) return;
   if (bossState.dead) {
     bossState.timer -= dt;
     const k = Math.max(0, bossState.timer / 2.2);
@@ -1333,8 +1524,8 @@ function updateBoss(dt) {
     }
     case "stagger": {
       bossState.anim = 0;
-      boss.userData.parts.body.rotation.x = THREE.MathUtils.lerp(boss.userData.parts.body.rotation.x, 1.5, 0.15);
-      boss.userData.parts.head.rotation.x = THREE.MathUtils.lerp(boss.userData.parts.head.rotation.x, 1.3, 0.15);
+      boss.userData.parts.body.rotation.x = THREE.MathUtils.lerp(boss.userData.parts.body.rotation.x, 0.65, 0.15);
+      boss.userData.parts.head.rotation.x = THREE.MathUtils.lerp(boss.userData.parts.head.rotation.x, 0.3, 0.15);
       boss.userData.parts.swordHolder.rotation.z = 0.8;
       if (bossState.timer <= 0) {
         bossState.state = "idle";
@@ -1373,6 +1564,10 @@ function updateBoss(dt) {
 
   // BOSS 受伤闪烁
   const core = boss.userData.parts.core;
+  const blade = boss.userData.parts.blade;
+  blade.material.color.set(bossState.phase2 ? 0x8a80ff : 0xe2bb6b);
+  blade.material.emissive.set(bossState.phase2 ? 0x5544cc : 0x8c581b);
+  blade.material.emissiveIntensity = 0.5;
   if (bossState.hitFlash > 0) {
     core.material.emissiveIntensity = 2.4;
   } else {
@@ -1580,7 +1775,7 @@ function updateBossAttack(dt) {
 }
 
 function bossHitPlayer(dmg) {
-  if (gameState !== "play" || playerState.dead || playerState.invuln > 0 || playerState.dodging) return;
+  if (execution.active || gameState !== "play" || playerState.dead || playerState.invuln > 0 || playerState.dodging) return;
   playerState.hp -= dmg;
   playerState.hitFlash = 0.25;
   // 受伤后的无敌帧：避免被 BOSS 一套连招直接连死（可与翻滚无敌帧叠加）
@@ -1716,17 +1911,17 @@ function updateFx(dt) {
     if (b.friendly) {
       const dx = bossState.pos.x - b.mesh.position.x;
       const dz = bossState.pos.z - b.mesh.position.z;
-      const dy = 1.4 - b.mesh.position.y;
-      if (Math.hypot(dx, dz) < 1.0 && Math.abs(dy) < 1.4 && !bossState.dead) {
-        damageBoss(58 * playerClass.stat.atk, {});
+      const dy = 2.0 - b.mesh.position.y;
+      if (Math.hypot(dx, dz) < 1.0 && Math.abs(dy) < 1.6 && !bossState.dead) {
+        damageBoss(b.damage, {});
         spawnImpact(b.mesh.position.x, b.mesh.position.y, b.mesh.position.z, 0xaa88ff, 10);
-        scene.remove(b.mesh);
+        removeSpell(b);
         fx.bolts.splice(i, 1);
         continue;
       }
     }
     if (b.life <= 0 || b.mesh.position.length() > ARENA_R + 8) {
-      scene.remove(b.mesh);
+      removeSpell(b);
       fx.bolts.splice(i, 1);
     }
   }
@@ -1808,6 +2003,15 @@ function cameraShake(v) {
 
 function updateCamera(dt) {
   if (!player) return;
+  if (execution.active) {
+    const side = new THREE.Vector3(execution.outward.z, 0, -execution.outward.x);
+    const desired = execution.bossPos.clone().addScaledVector(execution.outward, 4.1).addScaledVector(side, 4.0);
+    desired.y = 3.0;
+    camera.position.lerp(desired, 1 - Math.pow(0.0001, dt));
+    camera.lookAt(execution.bossPos.clone().addScaledVector(execution.outward, 0.45).add(new THREE.Vector3(0, 1.9, 0)));
+    els.lockon.classList.add("hidden");
+    return;
+  }
   // 相机围绕“角色胸口高度”这个支点旋转，保证角色始终在画面里
   const pivot = new THREE.Vector3(playerState.pos.x, playerState.pos.y + 1.55, playerState.pos.z);
   const yaw = playerState.yaw;
@@ -1939,8 +2143,9 @@ function tick() {
   world.fireflies.rotation.y += dt * 0.02;
 
   if (gameState === "play" && (locked || freeLook) && player && !playerState.dead) {
-    updatePlayer(dt);
-    if (bossState.engaged) {
+    if (execution.active) updateExecution(dt);
+    else updatePlayer(dt);
+    if (bossState.engaged && !execution.active) {
       updateBoss(dt);
       if (bossState.engaged) audio.startBattlePulse();
     }
@@ -1978,10 +2183,10 @@ function autoEngage() {
     if (dist < 16 || elapsed > 4) {
       bossState.engaged = true;
       els.boss.classList.remove("hidden");
-      els.bossName.textContent = "HEOLSTOR, THE NIGHTREIGN";
+      els.bossName.textContent = "黑夜王 布德奇冥 · HEOLSTOR";
       audio.startBattlePulse();
       audio.sfx("roar");
-      showCenterMsg("HEOLSTOR, THE NIGHTREIGN", 2.4);
+      showCenterMsg("黑夜王 布德奇冥", 2.4);
     }
   }
 }
@@ -2001,6 +2206,10 @@ if (new URLSearchParams(location.search).has("debug")) {
         hp: playerState.hp, maxHp: playerState.maxHp,
         stamina: playerState.stamina, flasks: playerState.flasks,
         dead: playerState.dead, attacking: playerState.attacking,
+        executing: execution.active, executionTime: execution.time, executionPhase: execution.phase,
+        executionPenetration: execution.penetration,
+        executionHits: execution.hits.map(hit => ({ ...hit })), bossHumanoid: Boolean(boss.userData.humanoid),
+        bossYaw: boss.rotation.y, bossAttackT: bossState.attackT ?? 0,
         heavyCharging: playerState.heavyCharging, healing: playerState.healing,
         dodging: playerState.dodging, grounded: playerState.grounded,
         heavyCharge: playerState.heavyCharge,
@@ -2010,12 +2219,16 @@ if (new URLSearchParams(location.search).has("debug")) {
         bossPhase2: bossState.phase2, bossEngaged: bossState.engaged,
         waves: fx.rings.filter((r) => r.wave).length, meteors: fx.meteors.length,
         bolts: fx.bolts.length, lockedOn: playerState.locked,
+        projectileDamage: fx.bolts.map(b => b.damage),
+        weaponVisible: player?.userData.parts.weaponHolder.visible,
+        criticalBladeVisible: execution.blade?.parent === scene,
       };
     },
     damageBoss,
     bossHitPlayer,
     spawnWave,
     spawnMeteor,
+    holdBoss(seconds = 10) { resetBossPose(); bossState.state = "recover"; bossState.timer = seconds; },
     get state() { return gameState; },
     get playerHp() { return playerState.hp; },
     get bossHp() { return bossState.hp; },

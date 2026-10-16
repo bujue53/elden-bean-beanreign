@@ -34,7 +34,7 @@ export async function run() {
       const wantBackward = dist < 1.2 && s.bossHp > 0;
       if (forward !== wantForward) { key('KeyW', wantForward ? 'keydown' : 'keyup'); forward = wantForward; }
       if (backward !== wantBackward) { key('KeyS', wantBackward ? 'keydown' : 'keyup'); backward = wantBackward; }
-      if (!s.attacking && !s.heavyCharging && !s.healing && s.hp < 300 && s.flasks > 0) { tap('KeyH'); heals++; }
+      if (!s.attacking && !s.heavyCharging && !s.healing && s.hp < 300 && s.flasks > 0) { tap('KeyR'); heals++; }
       else if (!s.attacking && !s.healing && s.stamina >= 12 && s.bossHp > 0) {
         mouse('mousedown'); await delay(100); mouse('mouseup'); attacks++;
       }

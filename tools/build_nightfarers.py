@@ -411,43 +411,51 @@ def export(p,kind):
     heights=[(o.matrix_world@Vector(corner)).z for o in hierarchy(root) if o.type=='MESH' for corner in o.bound_box]
     return {'id':kind,'file':'assets/models/'+kind+'.glb','triangles':triangles,'meshCount':sum(o.type=='MESH' for o in hierarchy(root)),'bytes':os.path.getsize(target),'height':round(max(heights)-min(heights),3)}
 
-builders=[('executioner',executor),('guardian',guardian),('rogue',raider),('hermit',recluse)]
-models=[];roots=[]
-for index,(kind,builder) in enumerate(builders):
-    # Names in each glTF must be stable, independent of Blender's .001 suffixes.
-    before=set(bpy.data.objects)
-    p=builder();p['root']['classId']=kind
-    for name in ['body','head','armL','armR','legL','legR','weaponHolder']:
-        p[name].name=name
-        p[name]['part']=name
-    if 'shieldHolder' in p:p['shieldHolder']['part']='shieldHolder'
-    info=export(p,kind);models.append(info)
-    for obj in hierarchy(p['root']):
-        if obj.type=='EMPTY':obj.name=kind+'_'+obj.name
-    p['root'].location.x=index*2.3-3.45
-    roots.append(p['root'])
-    print('MODEL',json.dumps(info),flush=True)
+def main():
+    builders=[('executioner',executor),('guardian',guardian),('rogue',raider),('hermit',recluse)]
+    models=[];roots=[]
+    for index,(kind,builder) in enumerate(builders):
+        # Names in each glTF must be stable, independent of Blender's .001 suffixes.
+        before=set(bpy.data.objects)
+        p=builder();p['root']['classId']=kind
+        for name in ['body','head','armL','armR','legL','legR','weaponHolder']:
+            p[name].name=name
+            p[name]['part']=name
+        if 'shieldHolder' in p:p['shieldHolder']['part']='shieldHolder'
+        info=export(p,kind);models.append(info)
+        for obj in hierarchy(p['root']):
+            if obj.type=='EMPTY':obj.name=kind+'_'+obj.name
+        p['root'].location.x=index*2.3-3.45
+        roots.append(p['root'])
+        print('MODEL',json.dumps(info),flush=True)
 
-# Studio scene, retained in the editable .blend file.
-bpy.context.scene.render.engine='CYCLES'
-bpy.context.scene.cycles.samples=32
-bpy.context.scene.world.color=(.10,.10,.10)
-floor_mat=material('Studio slate',(.028,.036,.046),.15,.55)
-box('Studio plinth',(0,-.065,0),(11,.12,3.0),floor_mat,None,.04)
-def area(name,pos,power,size,color):
-    data=bpy.data.lights.new(name,'AREA');data.energy=power;data.shape='DISK';data.size=size;data.color=color
-    obj=bpy.data.objects.new(name,data);bpy.context.collection.objects.link(obj);obj.location=xyz(pos)
-    obj.rotation_euler=(xyz((0,1.1,0))-obj.location).to_track_quat('-Z','Y').to_euler()
-area('Warm key',(-3,6,5),1700,5,(1,.82,.64))
-area('Cool fill',(4,4,3),1400,5,(.65,.78,1))
-area('Rim',(0,5,-3),2100,4,(.75,.85,1))
-camera_data=bpy.data.cameras.new('Lineup Camera');camera=bpy.data.objects.new('Lineup Camera',camera_data);bpy.context.collection.objects.link(camera)
-camera.location=xyz((4.9,3.5,10));camera.rotation_euler=(xyz((0,1.1,0))-camera.location).to_track_quat('-Z','Y').to_euler()
-camera_data.type='ORTHO';camera_data.ortho_scale=10.4;bpy.context.scene.camera=camera
-scene=bpy.context.scene;scene.render.resolution_x=1600;scene.render.resolution_y=800;scene.render.resolution_percentage=100
-scene.view_settings.view_transform='AgX'
-bpy.ops.wm.save_as_mainfile(filepath=os.path.join(BLEND,'nightfarers.blend'))
-scene.render.filepath=os.path.join(PREVIEW,'lineup.png')
-bpy.ops.render.render(write_still=True)
-with open(os.path.join(OUT,'manifest.json'),'w',encoding='utf-8') as f:json.dump({'generator':'Blender '+bpy.app.version_string,'models':models},f,ensure_ascii=False,indent=2)
-print('BUILD COMPLETE',flush=True)
+    # Studio scene, retained in the editable .blend file.
+    bpy.context.scene.render.engine='CYCLES'
+    bpy.context.scene.cycles.samples=32
+    bpy.context.scene.world.color=(.10,.10,.10)
+    floor_mat=material('Studio slate',(.028,.036,.046),.15,.55)
+    box('Studio plinth',(0,-.065,0),(11,.12,3.0),floor_mat,None,.04)
+    def area(name,pos,power,size,color):
+        data=bpy.data.lights.new(name,'AREA');data.energy=power;data.shape='DISK';data.size=size;data.color=color
+        obj=bpy.data.objects.new(name,data);bpy.context.collection.objects.link(obj);obj.location=xyz(pos)
+        obj.rotation_euler=(xyz((0,1.1,0))-obj.location).to_track_quat('-Z','Y').to_euler()
+    area('Warm key',(-3,6,5),1700,5,(1,.82,.64))
+    area('Cool fill',(4,4,3),1400,5,(.65,.78,1))
+    area('Rim',(0,5,-3),2100,4,(.75,.85,1))
+    camera_data=bpy.data.cameras.new('Lineup Camera');camera=bpy.data.objects.new('Lineup Camera',camera_data);bpy.context.collection.objects.link(camera)
+    camera.location=xyz((4.9,3.5,10));camera.rotation_euler=(xyz((0,1.1,0))-camera.location).to_track_quat('-Z','Y').to_euler()
+    camera_data.type='ORTHO';camera_data.ortho_scale=10.4;bpy.context.scene.camera=camera
+    scene=bpy.context.scene;scene.render.resolution_x=1600;scene.render.resolution_y=800;scene.render.resolution_percentage=100
+    scene.view_settings.view_transform='AgX'
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(BLEND,'nightfarers.blend'))
+    scene.render.filepath=os.path.join(PREVIEW,'lineup.png')
+    bpy.ops.render.render(write_still=True)
+    manifest_path=os.path.join(OUT,'manifest.json')
+    if os.path.exists(manifest_path):
+        with open(manifest_path,encoding='utf-8') as f:previous=json.load(f)
+        models += [m for m in previous['models'] if m['id'] not in {kind for kind,_ in builders}]
+    with open(manifest_path,'w',encoding='utf-8') as f:json.dump({'generator':'Blender '+bpy.app.version_string,'models':models},f,ensure_ascii=False,indent=2)
+    print('BUILD COMPLETE',flush=True)
+
+if __name__ == '__main__':
+    main()

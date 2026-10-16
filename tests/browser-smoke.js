@@ -66,7 +66,7 @@ export async function run() {
     check('受到伤害', game.playerHp === 420);
     game.bossHitPlayer(200);
     check('受伤无敌帧拦截连伤', game.playerHp === 420);
-    tap('KeyH'); await until(() => game.snapshot.flasks === 3);
+    tap('KeyR'); await until(() => game.snapshot.flasks === 3);
     check('喝血瓶恢复生命', game.playerHp === 620);
     safe();
     tap('KeyE');

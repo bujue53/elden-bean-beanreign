@@ -32,6 +32,14 @@
       "meshCount": 25,
       "bytes": 765680,
       "height": 2.441
+    },
+    {
+      "id": "heolstor",
+      "file": "assets/models/heolstor.glb",
+      "triangles": 25858,
+      "meshCount": 30,
+      "bytes": 997800,
+      "height": 5.2
     }
   ]
 }

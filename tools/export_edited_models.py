@@ -1,8 +1,9 @@
 """Export the edited .blend without regenerating its meshes."""
-import bpy, os, json
+import bpy, os, json, sys
 from mathutils import Vector
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-bpy.ops.wm.open_mainfile(filepath=os.path.join(ROOT,'assets','blender','nightfarers.blend'))
+source='heolstor' if '--' in sys.argv and 'heolstor' in sys.argv[sys.argv.index('--')+1:] else 'nightfarers'
+bpy.ops.wm.open_mainfile(filepath=os.path.join(ROOT,'assets','blender',source+'.blend'))
 manifest_path=os.path.join(ROOT,'assets','models','manifest.json')
 with open(manifest_path,encoding='utf-8') as f:manifest=json.load(f)
 for root in list(bpy.context.scene.objects):

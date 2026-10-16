@@ -15,3 +15,5 @@ jobs:
       - run: node --check js/nightfarers.js
       - run: node --check tests/browser-smoke.js
       - run: node --check tests/playthrough.js
+      - run: node --check tests/combat-features.js
+      - run: node --check tests/record-execution.js

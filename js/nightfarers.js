@@ -2,7 +2,7 @@ import * as THREE from '../lib/three.module.js';
 import { GLTFLoader } from '../lib/GLTFLoader.js';
 
 const templates = new Map();
-const ids = ['executioner', 'guardian', 'rogue', 'hermit'];
+const ids = ['executioner', 'guardian', 'rogue', 'hermit', 'heolstor'];
 
 export async function loadNightfarers() {
   const loader = new GLTFLoader();
@@ -54,6 +54,26 @@ export function createNightfarer(id) {
 export function disposeNightfarer(root) {
   // Geometry and image textures belong to the shared cached templates.
   for (const material of root?.userData.materials ?? []) material.dispose();
+}
+
+export function createHeolstor() {
+  const root = createNightfarer('heolstor');
+  const p = root.userData.parts;
+  p.swordHolder = p.weaponHolder;
+  p.core = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 8), new THREE.MeshStandardMaterial({
+    color: 0x18152f, emissive: 0x5544aa, emissiveIntensity: 0.8, metalness: 0.5, roughness: 0.4,
+  }));
+  p.criticalAnchor.add(p.core);
+  const marker = new THREE.Group();
+  marker.add(new THREE.Mesh(new THREE.OctahedronGeometry(0.18), new THREE.MeshBasicMaterial({ color: 0xc7a76c })));
+  marker.position.y = 6.1;
+  root.add(marker);
+  const aura = new THREE.PointLight(0x6755bb, 1.5, 18, 2);
+  aura.position.set(0, 2.5, 0.4);
+  root.add(aura);
+  root.userData.marker = marker;
+  root.userData.aura = aura;
+  return root;
 }
 
 export function updateNightfarerFlash(root, active) {

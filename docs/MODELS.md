@@ -37,13 +37,15 @@
 
 ## 如何接入游戏
 
-`js/nightfarers.js` 使用与仓库 Three.js r185 匹配的 GLTFLoader 预加载四个模型，按职业克隆实例并绑定 `body`、`head`、手臂、腿与武器关节。
+`js/nightfarers.js` 使用与仓库 Three.js r185 匹配的 GLTFLoader 预加载四个玩家模型和布德奇冥模型，按职业克隆实例并绑定 `body`、`head`、手臂、腿与武器关节。
 
 游戏的待机、走路、冲刺、跳跃、挥剑、蓄力、喝血和翻滚由现有状态机驱动关节。人形版本调整了头部基准高度、肩部挥动和整身翻滚，并为金属材质补充环境反射。受击闪烁改为遍历新模型材质。切换职业时释放实例材质，共享几何和纹理保留在缓存中。
 
 这里使用的是**刚性部件关节层级**，没有专业蒙皮、动作捕捉、手指动画或布料模拟。进一步精修时可在 Blender 增加完整骨骼与权重，并另行接入 AnimationMixer。
 
-战斗判定、HP、精力与职业速度沿用原作业版本；外观武器换为刀、戟、巨斧和法杖，未同步改造成官方职业机制。无赖仍保留本作快速连击，守护者仍无格挡功能。BOSS 本次沿用旧豆骑士模型。
+HP、精力与职业速度沿用本项目设定。无赖仍保留快速连击，守护者仍无格挡功能。后续版本已加入隐士全远程攻击、两段处决，并用 `assets/models/heolstor.glb` 替换旧豆骑士；详见 [战斗更新说明](COMBAT.md)。
+
+布德奇冥可编辑源文件为 [heolstor.blend](../assets/blender/heolstor.blend)，重建脚本为 `tools/build_heolstor.py`。修改此文件后导出可执行 `blender --background --factory-startup --python tools/export_edited_models.py -- heolstor`。
 
 ## 编辑与重新导出
 
@@ -68,6 +70,8 @@ blender --background --factory-startup --python tools/render_portraits.py
 **重建脚本会覆盖现有 GLB 和 .blend**；手工编辑后应使用前面的“编辑模型导出”脚本。导出完成后执行 `npm test`，并刷新浏览器检查动作和材质。导出脚本也会更新 manifest 中的模型统计。
 
 ## 验证
+
+以下为初次四职业人形替换时的验证记录；当前战斗与布德奇冥版本的结果见 [战斗更新说明](COMBAT.md)。
 
 - `npm test`：6 / 6 通过，包含四个 GLB 的格式、关节、内嵌纹理和体积检查，以及两项服务器测试。
 - 人形版本浏览器回归：28 / 28 通过，四个职业确认使用人形模型，移动、轻重击、弹幕、受伤、喝血、翻滚、暂停、复活、胜利与再开局正常。原始结果见 [smoke-result.json](models/smoke-result.json)。

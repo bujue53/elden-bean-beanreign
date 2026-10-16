@@ -36,7 +36,7 @@ export const CLASSES = [
     id: "hermit",
     name: "隐士",
     emoji: "🧙",
-    desc: "银发尖帽的隐士，着紫黑长袍与刺绣宽袖。右键释放法术弹幕。",
+    desc: "银发尖帽的隐士。左键发射远程法术，右键蓄力释放更强的远程弹幕。",
     weapon: "staff",
     color: 0x6b4f8f,
     headScale: 1.05,
