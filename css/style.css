@@ -154,6 +154,14 @@ html, body {
   line-height: 1.1;
 }
 
+.character-portrait {
+  display: block;
+  width: 100%;
+  height: clamp(140px, 28vh, 220px);
+  object-fit: contain;
+  filter: drop-shadow(0 7px 10px rgba(0, 0, 0, 0.65));
+}
+
 .select-card .card-name {
   margin-top: 8px;
   font-size: 18px;

@@ -39,7 +39,7 @@ export async function run() {
   try {
     for (let i = 0; i < 4; i++) {
       await enterFight(i);
-      check('职业 ' + i + ' 正常初始化', game.state === 'play' && game.playerHp === [620, 820, 500, 560][i] && !game.snapshot.dead);
+      check('职业 ' + i + ' 人形模型正常初始化', game.state === 'play' && game.playerHp === [620, 820, 500, 560][i] && !game.snapshot.dead && game.snapshot.humanoid);
     }
     await enterFight(0);
     await delay(600);

@@ -46,12 +46,15 @@ test('serves game modules and rejects missing, malformed and hidden paths', asyn
   const home = await request(port, '/');
   assert.equal(home.status, 200);
   assert.match(home.body, /ELDEN BEAN/);
-  for (const file of ['/js/game.js', '/js/characters.js', '/js/audio.js', '/js/textures.js', '/lib/three.module.js', '/lib/three.core.js']) {
+  for (const file of ['/js/game.js', '/js/characters.js', '/js/audio.js', '/js/textures.js', '/js/nightfarers.js', '/lib/three.module.js', '/lib/three.core.js', '/lib/GLTFLoader.js', '/lib/BufferGeometryUtils.js', '/lib/SkeletonUtils.js']) {
     const response = await request(port, file);
     assert.equal(response.status, 200, file);
     assert.match(response.headers['content-type'], /javascript/, file);
   }
   assert.equal((await request(port, '/css/style.css')).status, 200);
+  const model = await request(port, '/assets/models/executioner.glb');
+  assert.equal(model.status, 200);
+  assert.match(model.headers['content-type'], /gltf-binary/);
   assert.equal((await request(port, '/missing-file')).status, 404);
   assert.equal((await request(port, '/%ZZ')).status, 400);
   assert.equal((await request(port, '/.git/config')).status, 403);

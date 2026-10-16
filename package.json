@@ -5,7 +5,7 @@
   "description": "ELDEN BEAN: BEANREIGN（黑夜豆临）",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test tests/server.test.cjs"
+    "test": "node --test tests/server.test.cjs tests/models.test.cjs"
   },
   "engines": { "node": ">=18" }
 }

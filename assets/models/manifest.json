@@ -1,0 +1,37 @@
+{
+  "generator": "Blender 5.2.2 LTS",
+  "models": [
+    {
+      "id": "executioner",
+      "file": "assets/models/executioner.glb",
+      "triangles": 17584,
+      "meshCount": 33,
+      "bytes": 1057352,
+      "height": 2.02
+    },
+    {
+      "id": "guardian",
+      "file": "assets/models/guardian.glb",
+      "triangles": 13725,
+      "meshCount": 31,
+      "bytes": 1097544,
+      "height": 2.52
+    },
+    {
+      "id": "rogue",
+      "file": "assets/models/rogue.glb",
+      "triangles": 16718,
+      "meshCount": 27,
+      "bytes": 1077432,
+      "height": 2.389
+    },
+    {
+      "id": "hermit",
+      "file": "assets/models/hermit.glb",
+      "triangles": 15108,
+      "meshCount": 25,
+      "bytes": 765680,
+      "height": 2.441
+    }
+  ]
+}

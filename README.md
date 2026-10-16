@@ -1,8 +1,18 @@
 # ELDEN BEAN: BEANREIGN（黑夜豆临）
 
-单人 3D 豆子 BOSS 战小游戏：选择职业，在黑夜竞技场挑战 **Heolstor, The Nightreign**。
+单人 3D BOSS 战小游戏：选择职业，在黑夜竞技场挑战 **Heolstor, The Nightreign**。现已替换为参考官方形象制作的四个 Blender 人形角色。
 
-使用 JavaScript、Three.js 和 WebAudio，直接在浏览器运行，无需 Unity 编辑器。角色、场景、贴图和音效由代码生成；Three.js 随仓库提供，无需加载 CDN。
+使用 JavaScript、Three.js 和 WebAudio，直接在浏览器运行，无需 Unity 编辑器。角色由 Blender 制作并导出为 GLB；场景、BOSS、特效和音效仍由代码生成。模型与 Three.js 随仓库提供，无需加载 CDN。
+
+## Blender 人形角色
+
+![四职业 Blender 模型](docs/models/lineup.png)
+
+四个可选角色参考万代南梦宫官方角色图重新制作：执刑者的青铜覆面甲与武士刀、守护者的鸟首银甲与长戟大盾、无赖的角盔毛皮与巨斧、隐士的尖帽银发与紫黑长袍。角色改为人形比例，职业数值和操作规则沿用本作。
+
+这是基于参考图重建的轻量风格化初版，并非官方原版模型，也不是原版精度的一比一复刻。当前 BOSS 仍沿用豆骑士模型。
+
+可编辑源文件：[nightfarers.blend](assets/blender/nightfarers.blend)。参考来源、模型数据及重新导出方法见 [模型说明](docs/MODELS.md)。玩家只需下载游戏，不需要安装 Blender。
 
 ## 下载与运行
 
@@ -61,10 +71,10 @@
 
 | 职业 | HP | 精力 | 攻击倍率 | 特点 |
 | --- | ---: | ---: | ---: | --- |
-| 执刑者 | 620 | 100 | ×1.25 | 高伤害、较大近战范围 |
-| 守护者 | 820 | 100 | ×0.90 | 生命最多；盾牌为外观，无格挡按键 |
-| 无赖 | 500 | 110 | ×0.65 | 速度快、四段轻击，单次伤害较低 |
-| 隐士 | 560 | 100 | ×0.85 | 右键发射远程豆能弹幕 |
+| 执刑者 | 620 | 100 | ×1.25 | 青铜甲武士刀；高伤害、较大近战范围 |
+| 守护者 | 820 | 100 | ×0.90 | 鸟首、长戟、大盾；生命最多，盾牌无格挡功能 |
+| 无赖 | 500 | 110 | ×0.65 | 角盔毛皮巨斧；保留本作速度与四段连击设定 |
+| 隐士 | 560 | 100 | ×0.85 | 银发尖帽法师；右键发射远程弹幕 |
 
 ## 战斗提示
 
@@ -78,7 +88,7 @@
 
 ## 可玩性验证
 
-验证日期：**2026-10-16**。**28 项浏览器功能回归、2 项服务器测试全部通过**，覆盖四职业、移动、锁定、翻滚、跳跃、轻重击、弹幕、喝血、暂停、死亡复活、二阶段、胜利和再次开局。
+验证日期：**2026-10-16**。基础版完成 **28 项浏览器功能回归、2 项服务器测试**。人形版本另外加入四个 GLB 模型的有效性、关节和内嵌贴图检查，更新后的验证结果见 [模型说明](docs/MODELS.md)。
 
 完整战斗结果、修复内容及测试限制见 **[可玩性验证记录](docs/PLAYABILITY.md)**。功能回归中的场景构造与正常操作通关分开记录。
 
@@ -108,10 +118,15 @@ await (await import('/tests/playthrough.js')).run()
 index.html              入口与菜单
 css/style.css           界面样式
 js/game.js              战斗、BOSS AI、相机和特效
-js/characters.js        职业与角色建模
+js/characters.js        职业设定、BOSS 与旧版程序模型
+js/nightfarers.js       Blender GLB 加载与关节适配
 js/textures.js          程序化贴图
 js/audio.js             音效与音乐
-lib/                    Three.js r185 与许可
+lib/                    Three.js r185、GLTFLoader 与许可
+assets/models/          游戏使用的 GLB 模型与数据清单
+assets/blender/         可编辑 Blender 源文件
+assets/portraits/       从模型渲染的选角图
+tools/                  Blender 建模与肖像渲染脚本
 server.js               本地静态服务器
 start.bat               Windows 一键启动
 tests/                 服务器、浏览器回归及战斗脚本

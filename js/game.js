@@ -1,14 +1,24 @@
 import * as THREE from "../lib/three.module.js";
 import { audio } from "./audio.js";
-import { CLASSES, buildBean, buildBoss, buildBeanBolt } from "./characters.js";
+import { CLASSES, buildBoss, buildBeanBolt } from "./characters.js";
+import { loadNightfarers, createNightfarer, disposeNightfarer, updateNightfarerFlash } from "./nightfarers.js";
 import {
   groundTexture, moonTexture, pillarTexture, softDotTexture,
-  slashTexture, ringTexture, beamTexture, beanFaceTexture,
+  slashTexture, ringTexture, beamTexture,
 } from "./textures.js";
 
 // ---------- DOM ----------
 const $ = (id) => document.getElementById(id);
 const canvas = $("game-canvas");
+
+document.querySelector('.title-press').textContent = '正在加载人物模型…';
+try {
+  await loadNightfarers();
+  document.querySelector('.title-press').textContent = '按 Enter 开始游戏';
+} catch (error) {
+  document.querySelector('.title-press').textContent = '人物模型加载失败，请刷新页面重试';
+  throw error;
+}
 
 const els = {
   title: $("screen-title"),
@@ -46,6 +56,24 @@ renderer.toneMappingExposure = 1.55;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x121b3c);
 scene.fog = new THREE.Fog(0x1c2647, 32, 82);
+
+// PBR armor needs reflected light as well as direct moonlight.
+const reflectionScene = new THREE.Scene();
+reflectionScene.background = new THREE.Color(0x78849a);
+for (const [x, y, z, color] of [
+  [3, 4, 3, new THREE.Color(2.4, 2.1, 1.8)],
+  [-4, 2, -2, new THREE.Color(1.0, 1.4, 2.1)],
+]) {
+  const panel = new THREE.Mesh(new THREE.PlaneGeometry(4, 5), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }));
+  panel.position.set(x, y, z);
+  panel.lookAt(0, 1, 0);
+  reflectionScene.add(panel);
+}
+const reflectionGenerator = new THREE.PMREMGenerator(renderer);
+scene.environment = reflectionGenerator.fromScene(reflectionScene, 0.08).texture;
+scene.environmentIntensity = 0.65;
+reflectionGenerator.dispose();
+reflectionScene.traverse(node => { node.geometry?.dispose(); node.material?.dispose(); });
 
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
 camera.position.set(0, 3, 12);
@@ -211,13 +239,8 @@ const playerState = {
 };
 
 function buildPlayer() {
-  if (player) scene.remove(player);
-  player = buildBean({
-    color: playerClass.color,
-    headScale: playerClass.headScale,
-    weaponType: playerClass.weapon,
-    faceTex: beanFaceTexture(),
-  });
+  if (player) { scene.remove(player); disposeNightfarer(player); }
+  player = createNightfarer(playerClass.id);
   scene.add(player);
   playerState.maxHp = playerClass.stat.hp;
   playerState.maxStamina = playerClass.stat.stamina;
@@ -261,6 +284,8 @@ function respawnPlayer() {
   playerState.invuln = 0;
   clearInput();
   playerState.yaw = Math.atan2(bossState.pos.x - 0, bossState.pos.z - 12);
+  player.position.copy(playerState.pos);
+  player.rotation.y = playerState.yaw;
   player.visible = true;
   resetWeaponPose();
   updateHUD();
@@ -643,7 +668,7 @@ function buildSelectUI() {
     card.className = "select-card" + (i === 0 ? " selected" : "");
     card.dataset.index = i;
     card.innerHTML = `
-      <div class="bean-emoji">${cls.emoji}</div>
+      <img class="character-portrait" src="assets/portraits/${cls.id}.png" alt="${cls.name}人形模型" width="160" height="200">
       <div class="card-name">${cls.name}</div>
       <div class="card-stat">
         <div class="card-hp">HP ${cls.stat.hp}</div>
@@ -705,6 +730,7 @@ function setState(s) {
 
 function openSelect() {
   setState("select");
+  selectIndex(selectIdx, false);
   audio.playTitleTheme();
 }
 
@@ -716,6 +742,7 @@ function toTitle() {
   audio.sfx("ui");
   setState("title");
   scene.remove(player);
+  disposeNightfarer(player);
   player = null;
   bossState.hp = bossState.maxHp;
   bossState.poise = bossState.maxPoise;
@@ -963,7 +990,6 @@ function updatePlayer(dt) {
   // 受击闪烁
   if (playerState.hitFlash > 0) {
     playerState.hitFlash -= dt;
-    player.userData.parts.head.material.emissive && player.userData.parts.head.material.emissive.setScalar(playerState.hitFlash > 0 ? 0.7 : 0);
   }
 
   // 移动动画
@@ -1117,11 +1143,12 @@ function animatePlayerVisual(dt) {
   const t = playerState.animTime;
   player.position.set(playerState.pos.x, playerState.pos.y, playerState.pos.z);
   player.rotation.y = playerState.yaw;
+  player.userData.visual.rotation.x = playerState.dodging
+    ? -(1 - Math.max(0, playerState.dodgeTimer) / 0.34) * Math.PI * 2 : 0;
   heroLight.position.set(playerState.pos.x, playerState.pos.y + 3.2, playerState.pos.z);
 
   if (playerState.dodging) {
-    p.body.rotation.x = THREE.MathUtils.lerp(p.body.rotation.x, 1.2, 0.3);
-    player.scale.y = 0.9;
+    p.body.rotation.x = THREE.MathUtils.lerp(p.body.rotation.x, 0.35, 0.3);
   } else if (!playerState.grounded) {
     p.legL.rotation.x = -0.5;
     p.legR.rotation.x = 0.5;
@@ -1135,15 +1162,16 @@ function animatePlayerVisual(dt) {
     p.legR.rotation.x = -swing;
     p.armL.rotation.x = -swing * 0.7;
     p.body.rotation.x = THREE.MathUtils.lerp(p.body.rotation.x, playerState.sprinting ? 0.35 : 0.08, 0.2);
-    p.head.position.y = 1.32 * player.userData.headBaseScale + Math.abs(Math.sin(t * speed * 2)) * 0.06;
+    p.head.position.y = player.userData.headRestY + Math.abs(Math.sin(t * speed * 2)) * 0.018;
   } else {
     const breath = Math.sin(t * 2.2) * 0.03;
     p.legL.rotation.x = THREE.MathUtils.lerp(p.legL.rotation.x, 0, 0.2);
     p.legR.rotation.x = THREE.MathUtils.lerp(p.legR.rotation.x, 0, 0.2);
     p.armL.rotation.x = THREE.MathUtils.lerp(p.armL.rotation.x, 0, 0.2);
     p.body.rotation.x = THREE.MathUtils.lerp(p.body.rotation.x, 0, 0.2);
-    p.head.position.y = 1.32 * player.userData.headBaseScale + breath;
+    p.head.position.y = player.userData.headRestY + breath * 0.25;
   }
+  player.scale.y = 1;
 
   if (playerState.healing) {
     p.weaponHolder.rotation.x = -1.2;
@@ -1153,12 +1181,11 @@ function animatePlayerVisual(dt) {
     p.body.rotation.x = THREE.MathUtils.lerp(p.body.rotation.x, 0.12, 0.2);
   }
 
-  if (playerState.hitFlash > 0) {
-    player.userData.parts.body.material.emissive = new THREE.Color(0xff3322);
-    player.userData.parts.body.material.emissiveIntensity = 0.8;
-  } else if (player.userData.parts.body.material.emissive) {
-    player.userData.parts.body.material.emissive.setScalar(0);
-  }
+  updateNightfarerFlash(player, playerState.hitFlash > 0);
+  // The glTF hierarchy uses shoulder/hip pivots, so the arm follows the blade.
+  p.armR.rotation.x = playerState.attacking || playerState.heavyCharging || playerState.healing
+    ? p.weaponHolder.rotation.x * 0.52 : Math.sin(t * (playerState.sprinting ? 14 : 9)) * (playerState.moving ? 0.22 : 0);
+  p.armR.rotation.z = p.weaponHolder.rotation.z * 0.3;
 
   // 无敌帧期间闪烁，给出明确反馈（翻滚时用动作本身表现，不闪）
   if (playerState.invuln > 0 && !playerState.dodging) {
@@ -1970,7 +1997,7 @@ if (new URLSearchParams(location.search).has("debug")) {
   window.__game = {
     get snapshot() {
       return {
-        state: gameState, classId: playerClass?.id,
+        state: gameState, classId: playerClass?.id, humanoid: Boolean(player?.userData.humanoid),
         hp: playerState.hp, maxHp: playerState.maxHp,
         stamina: playerState.stamina, flasks: playerState.flasks,
         dead: playerState.dead, attacking: playerState.attacking,

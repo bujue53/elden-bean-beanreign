@@ -1,0 +1,117 @@
+{
+  "passed": 28,
+  "results": [
+    {
+      "name": "职业 0 人形模型正常初始化",
+      "passed": true
+    },
+    {
+      "name": "职业 1 人形模型正常初始化",
+      "passed": true
+    },
+    {
+      "name": "职业 2 人形模型正常初始化",
+      "passed": true
+    },
+    {
+      "name": "职业 3 人形模型正常初始化",
+      "passed": true
+    },
+    {
+      "name": "点击前战斗等待",
+      "passed": true
+    },
+    {
+      "name": "点击后激活 BOSS",
+      "passed": true
+    },
+    {
+      "name": "W 移动",
+      "passed": true
+    },
+    {
+      "name": "E 锁定",
+      "passed": true
+    },
+    {
+      "name": "E 解除锁定",
+      "passed": true
+    },
+    {
+      "name": "翻滚与无敌帧",
+      "passed": true
+    },
+    {
+      "name": "跳跃",
+      "passed": true
+    },
+    {
+      "name": "受到伤害",
+      "passed": true
+    },
+    {
+      "name": "受伤无敌帧拦截连伤",
+      "passed": true
+    },
+    {
+      "name": "喝血瓶恢复生命",
+      "passed": true
+    },
+    {
+      "name": "轻击命中",
+      "passed": true
+    },
+    {
+      "name": "蓄力重击命中",
+      "passed": true
+    },
+    {
+      "name": "暂停清除蓄力",
+      "passed": true
+    },
+    {
+      "name": "暂停冻结战斗",
+      "passed": true
+    },
+    {
+      "name": "窗口失焦自动暂停",
+      "passed": true
+    },
+    {
+      "name": "死亡界面",
+      "passed": true
+    },
+    {
+      "name": "R 复活保留 BOSS 血量",
+      "passed": true
+    },
+    {
+      "name": "复活清空危险与动作",
+      "passed": true
+    },
+    {
+      "name": "BOSS 二阶段阈值",
+      "passed": true
+    },
+    {
+      "name": "重新挑战恢复完整对局",
+      "passed": true
+    },
+    {
+      "name": "胜利界面",
+      "passed": true
+    },
+    {
+      "name": "胜利返回标题",
+      "passed": true
+    },
+    {
+      "name": "胜利后重新开局",
+      "passed": true
+    },
+    {
+      "name": "隐士右键弹幕命中",
+      "passed": true
+    }
+  ]
+}

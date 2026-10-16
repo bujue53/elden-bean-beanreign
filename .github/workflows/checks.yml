@@ -12,5 +12,6 @@ jobs:
           node-version: '22'
       - run: npm test
       - run: node --check js/game.js
+      - run: node --check js/nightfarers.js
       - run: node --check tests/browser-smoke.js
       - run: node --check tests/playthrough.js
