@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ELDEN BEAN: BEANREIGN</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="game-root">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- 标题界面 -->
+    <div id="screen-title" class="screen">
+      <div class="title-moon"></div>
+      <h1 class="title-main">ELDEN BEAN</h1>
+      <h2 class="title-sub">BEANREIGN</h2>
+      <div class="title-tagline">- 黑夜豆临 -</div>
+      <div class="title-press">按 Enter 开始游戏</div>
+      <div class="title-hint">Enter 选择职业 · 进入竞技场后点击画面开始战斗 · 建议键盘 + 鼠标游玩</div>
+      <div class="title-credit">Fan parody of Elden Ring Nightreign · Original: ELDEN BEAN by tomoko-fureimu</div>
+    </div>
+
+    <!-- 角色选择 -->
+    <div id="screen-select" class="screen hidden">
+      <div class="select-title">选择你的豆子</div>
+      <div class="select-grid" id="select-grid"></div>
+      <div class="select-foot">
+        <div class="select-controls">← → 选择 · Enter 确认</div>
+        <div class="select-preview" id="select-preview">执刑者：挥舞马雷家行刑剑的凶猛豆子，攻击高、范围大。</div>
+      </div>
+    </div>
+
+    <!-- 暂停菜单 -->
+    <div id="screen-pause" class="screen hidden">
+      <div class="pause-box">
+        <div class="pause-title">暂停</div>
+        <div class="pause-actions">
+          <div class="pause-action" data-action="resume">继续游戏 (Esc)</div>
+          <div class="pause-action" data-action="restart">重新挑战 BOSS</div>
+          <div class="pause-action" data-action="title">返回标题</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 死亡界面 -->
+    <div id="screen-defeat" class="screen hidden">
+      <div class="defeat-text">DEFEAT</div>
+      <div class="defeat-sub">BOSS 的血量会保留，起身再战</div>
+      <div class="defeat-respawn">按 R 回到竞技场</div>
+    </div>
+
+    <!-- 胜利界面 -->
+    <div id="screen-victory" class="screen hidden">
+      <div class="victory-text">NIGHTLORD SLAIN</div>
+      <div class="victory-thanks">Thank you for playing !!</div>
+      <div class="victory-next">按 Enter 返回标题</div>
+    </div>
+
+    <!-- 游戏 HUD -->
+    <div id="hud" class="hidden">
+      <div id="hud-player">
+        <div class="hud-label">HP</div>
+        <div class="bar-frame hp-frame">
+          <div class="bar-back hp-back"></div>
+          <div class="bar-fill hp-fill"></div>
+        </div>
+        <div class="hud-label">ST</div>
+        <div class="bar-frame st-frame">
+          <div class="bar-back st-back"></div>
+          <div class="bar-fill st-fill"></div>
+        </div>
+        <div class="flask-slot" id="flask-slot">
+          <div class="flask-icon">🍺</div>
+          <div class="flask-count" id="flask-count">4</div>
+        </div>
+      </div>
+
+      <div id="hud-boss" class="hidden">
+        <div class="boss-name" id="boss-name">HEOLSTOR, THE NIGHTREIGN</div>
+        <div class="bar-frame boss-frame">
+          <div class="bar-back boss-back"></div>
+          <div class="bar-fill boss-fill"></div>
+        </div>
+      </div>
+
+      <div id="lockon-reticle" class="hidden"></div>
+
+      <div id="boss-indicator" class="hidden">
+        <div class="boss-indicator-arrow">▲</div>
+        <div class="boss-indicator-dist" id="boss-indicator-dist">0m</div>
+      </div>
+
+      <div id="controls-hint">
+        WASD 移动 · 鼠标 视角 · 左键 轻击 · 右键 重击(可蓄力) · 中键/E 锁定敌人
+        · Shift 冲刺/翻滚 · 空格 跳跃 · H 喝血 · Esc 暂停
+      </div>
+
+      <div id="center-msg" class="hidden"></div>
+    </div>
+
+    <!-- 指针锁定提示 -->
+    <div id="lock-hint" class="hidden">
+      <div>点击画面开始战斗</div>
+      <div class="lock-hint-sub">鼠标锁定后可直接转视角；若浏览器不支持锁定，点击后移动鼠标同样可以转视角</div>
+    </div>
+  </div>
+
+  <script type="module" src="js/game.js"></script>
+</body>
+</html>

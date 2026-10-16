@@ -1,0 +1,11 @@
+{
+  "name": "elden-bean-beanreign",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ELDEN BEAN: BEANREIGN（黑夜豆临）",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test tests/server.test.cjs"
+  },
+  "engines": { "node": ">=18" }
+}
