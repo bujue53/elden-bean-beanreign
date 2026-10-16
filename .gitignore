@@ -5,3 +5,5 @@ test-results/
 Thumbs.db
 *.blend1
 __pycache__/
+.cache/
+dist/

@@ -17,3 +17,6 @@ jobs:
       - run: node --check tests/playthrough.js
       - run: node --check tests/combat-features.js
       - run: node --check tests/record-execution.js
+      - run: node --check desktop/main.cjs
+      - run: node --check desktop/smoke.cjs
+      - run: node --check tools/build-windows.cjs

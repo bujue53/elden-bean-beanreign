@@ -1,11 +1,21 @@
 {
   "name": "elden-bean-beanreign",
-  "version": "1.0.0",
+  "version": "0.0.1",
+  "productName": "ELDEN BEAN BEANREIGN",
+  "main": "desktop/main.cjs",
   "private": true,
   "description": "ELDEN BEAN: BEANREIGN（黑夜豆临）",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test tests/server.test.cjs tests/models.test.cjs"
+    "desktop": "electron .",
+    "build:win": "node tools/build-windows.cjs",
+    "test": "node --test tests/server.test.cjs tests/models.test.cjs tests/desktop.test.cjs"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@electron/packager": "20.3.0",
+    "electron": "44.8.0"
+  }
 }

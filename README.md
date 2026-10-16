@@ -16,6 +16,14 @@
 
 ## 下载与运行
 
+### Windows 便携版 0.0.1（推荐游玩）
+
+前往 **[Releases 下载页](https://github.com/bujue53/elden-bean-beanreign/releases/tag/v0.0.1)**，下载 `ELDEN-BEAN-BEANREIGN-0.0.1-win-x64.zip`，完整解压后双击 **ELDEN BEAN.exe**。
+
+游戏在独立窗口中运行，可离线游玩，无需安装 Node.js、Unity 或 Blender。F11 或 Alt+Enter 切换全屏，关闭窗口退出。请保留解压目录中的所有文件；不要只发送 EXE。支持 Windows 10/11 64 位，需支持 WebGL 2 的显卡、键盘和鼠标。完整说明见 [Windows 游玩说明](docs/WINDOWS-README.txt)。
+
+### 网页源码版
+
 1. 点击本仓库 **Code → Download ZIP** 并解压，或克隆仓库：
 
    ```bash
@@ -137,9 +145,23 @@ assets/portraits/       从模型渲染的选角图
 tools/                  Blender 建模与肖像渲染脚本
 server.js               本地静态服务器
 start.bat               Windows 一键启动
+desktop/                Windows 窗口与离线资源加载
 tests/                 服务器、浏览器回归及战斗脚本
 docs/PLAYABILITY.md    验证记录
 ```
+
+## 构建 Windows 版本
+
+开发构建需要 Windows 与 Node.js 22.12 或以上（建议 Node.js 24）。玩家使用 Release 包无需安装 Node.js。
+
+```bash
+npm ci
+npm run build:win
+```
+
+输出到 `dist/`，包括可直接运行的游戏文件夹与 Release ZIP。打包包含 Electron 44.8.0 运行环境、五个 GLB 和游戏素材；不含 Blender 源文件、参考图、视频或开发依赖。构建工具会从 Electron 官方下载运行环境。
+
+开发时用 `npx install-electron` 下载运行环境，再运行 `npm run desktop`。桌面版采用隔离沙箱和本地资源协议，无需启动 HTTP 服务器。打包验证记录见 [Windows 版本验证](docs/WINDOWS.md)。
 
 ## 致谢
 

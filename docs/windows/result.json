@@ -1,0 +1,239 @@
+{
+  "version": "0.0.1",
+  "packaged": true,
+  "runtime": "44.8.0",
+  "window": {
+    "title": "ELDEN BEAN: BEANREIGN 0.0.1",
+    "size": [
+      1280,
+      720
+    ]
+  },
+  "renderer": {
+    "nodeExposed": false,
+    "webgl": true,
+    "state": "title"
+  },
+  "fullscreen": true,
+  "features": {
+    "passed": 24,
+    "results": [
+      {
+        "name": "布德奇冥使用 GLB 人形模型",
+        "passed": true
+      },
+      {
+        "name": "H 不再喝药",
+        "passed": true
+      },
+      {
+        "name": "R 喝药并恢复生命",
+        "passed": true
+      },
+      {
+        "name": "死亡时 R 只复活，不额外喝药",
+        "passed": true
+      },
+      {
+        "name": "隐士轻击产生远程弹体",
+        "passed": true
+      },
+      {
+        "name": "隐士轻击只在远程弹命中时扣血",
+        "passed": true
+      },
+      {
+        "name": "隐士蓄力远程伤害高于轻击",
+        "passed": true
+      },
+      {
+        "name": "隐士蓄力攻击远程命中",
+        "passed": true
+      },
+      {
+        "name": "隐士空中轻击仍为远程",
+        "passed": true
+      },
+      {
+        "name": "远离破韧 BOSS 时不能处决",
+        "passed": true
+      },
+      {
+        "name": "破韧正面近身左键启动处决",
+        "passed": true
+      },
+      {
+        "name": "插入时第一段伤害",
+        "passed": true
+      },
+      {
+        "name": "刀尖实际插入 BOSS 胸部",
+        "passed": true
+      },
+      {
+        "name": "处决期间保护玩家且拒绝第三方伤害",
+        "passed": true
+      },
+      {
+        "name": "暂停冻结处决时间",
+        "passed": true
+      },
+      {
+        "name": "停顿及慢拔刀阶段无额外伤害",
+        "passed": true
+      },
+      {
+        "name": "拔出时第二段伤害",
+        "passed": true
+      },
+      {
+        "name": "慢拔刀后刀尖退出 BOSS 胸部",
+        "passed": true
+      },
+      {
+        "name": "处决期间 BOSS 位置朝向与攻击进度固定",
+        "passed": true
+      },
+      {
+        "name": "结束后恢复武器且恰好结算两次",
+        "passed": true
+      },
+      {
+        "name": "处决中重开完整清理交互",
+        "passed": true
+      },
+      {
+        "name": "第一段致死仍保留完整处决动画",
+        "passed": true
+      },
+      {
+        "name": "低血量处决仍有刺入与拔出两次打击",
+        "passed": true
+      },
+      {
+        "name": "处决完成后进入胜利流程",
+        "passed": true
+      }
+    ]
+  },
+  "smoke": {
+    "passed": 28,
+    "results": [
+      {
+        "name": "职业 0 人形模型正常初始化",
+        "passed": true
+      },
+      {
+        "name": "职业 1 人形模型正常初始化",
+        "passed": true
+      },
+      {
+        "name": "职业 2 人形模型正常初始化",
+        "passed": true
+      },
+      {
+        "name": "职业 3 人形模型正常初始化",
+        "passed": true
+      },
+      {
+        "name": "点击前战斗等待",
+        "passed": true
+      },
+      {
+        "name": "点击后激活 BOSS",
+        "passed": true
+      },
+      {
+        "name": "W 移动",
+        "passed": true
+      },
+      {
+        "name": "E 锁定",
+        "passed": true
+      },
+      {
+        "name": "E 解除锁定",
+        "passed": true
+      },
+      {
+        "name": "翻滚与无敌帧",
+        "passed": true
+      },
+      {
+        "name": "跳跃",
+        "passed": true
+      },
+      {
+        "name": "受到伤害",
+        "passed": true
+      },
+      {
+        "name": "受伤无敌帧拦截连伤",
+        "passed": true
+      },
+      {
+        "name": "喝血瓶恢复生命",
+        "passed": true
+      },
+      {
+        "name": "轻击命中",
+        "passed": true
+      },
+      {
+        "name": "蓄力重击命中",
+        "passed": true
+      },
+      {
+        "name": "暂停清除蓄力",
+        "passed": true
+      },
+      {
+        "name": "暂停冻结战斗",
+        "passed": true
+      },
+      {
+        "name": "窗口失焦自动暂停",
+        "passed": true
+      },
+      {
+        "name": "死亡界面",
+        "passed": true
+      },
+      {
+        "name": "R 复活保留 BOSS 血量",
+        "passed": true
+      },
+      {
+        "name": "复活清空危险与动作",
+        "passed": true
+      },
+      {
+        "name": "BOSS 二阶段阈值",
+        "passed": true
+      },
+      {
+        "name": "重新挑战恢复完整对局",
+        "passed": true
+      },
+      {
+        "name": "胜利界面",
+        "passed": true
+      },
+      {
+        "name": "胜利返回标题",
+        "passed": true
+      },
+      {
+        "name": "胜利后重新开局",
+        "passed": true
+      },
+      {
+        "name": "隐士右键弹幕命中",
+        "passed": true
+      }
+    ]
+  },
+  "normalModeHasNoDebug": true,
+  "errors": [],
+  "passed": true
+}

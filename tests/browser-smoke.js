@@ -34,7 +34,7 @@ export async function run() {
     document.querySelector('#lock-hint').click();
     await until(() => game.freeLook || game.pointerLocked);
   };
-  const safe = () => game.setPlayerPos(0, 20);
+  const safe = () => { game.holdBoss(60); game.setPlayerPos(0, 20); };
 
   try {
     for (let i = 0; i < 4; i++) {
@@ -120,6 +120,7 @@ export async function run() {
     await activate();
     safe(); tap('Escape'); clickMenu('title');
     await enterFight(3); await activate();
+    game.holdBoss(30);
     const magicBoss = game.snapshot;
     game.setPlayerPos(magicBoss.bossX, magicBoss.bossZ + 5);
     game.setYaw(Math.PI); tap('KeyE');
